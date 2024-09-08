@@ -1,169 +1,141 @@
 from random import *
 
 # Constantes
-POPULATION_SIZE = 20
-MUTATION_PROBABILITY = 0.03
-GENERATIONS_NUMBER = 1000
+TAMANHO_POPULACAO = 20
+PROBABILIDADE_MUTACAO = 0.03
+NUMERO_GERACOES = 1000
 n = 8
 
 # Seleção dos pais
-def roulette_wheel_selection(population: list[int], fitness_values: list[int], population_size: int) -> list[int]:
-    """
-    Roulette Wheel is a Parent Selection technique. The chromosome is selected according to its fitness probability.
-    The wheel position is generated as a random number between 0 and 1, because we are dealing with probabilities.
-    """
-    fitness_sum = sum(fitness_values)
-    fitness_probs = [(fitness / fitness_sum) for fitness in fitness_values]
-    wheel_position = uniform(0, 1)
-    cumulative_prob = 0
+def selecao_roleta(populacao: list[int], valores_fitness: list[int], tamanho_populacao: int) -> list[int]:
+    soma_fitness = sum(valores_fitness)
+    prob_fitness = [(fitness / soma_fitness) for fitness in valores_fitness]
+    posicao_roda = uniform(0, 1)
+    prob_cumulativa = 0
 
-    for i in range(population_size):
-        cumulative_prob += fitness_probs[i]
-        if cumulative_prob >= wheel_position:
-            return population[i]
+    for i in range(tamanho_populacao):
+        prob_cumulativa += prob_fitness[i]
+        if prob_cumulativa >= posicao_roda:
+            return populacao[i]
 
 # Conversor decimal para binário
-def decimal_to_binary(chromosome: list[int]) -> list[int]:
-    """
-    Converte uma lista de números decimais para uma lista binária,
-    onde cada número decimal é representado por exatamente 3 bits.
-    """
-    binary_chromosome = []
-    for num in chromosome:
-        binary_rep = format(num, '03b')  # Sempre gera exatamente 3 bits
-        binary_chromosome.extend([int(bit) for bit in binary_rep])
-    return binary_chromosome
+def decimal_para_binario(cromossomo: list[int]) -> list[int]:
+    cromossomo_binario = []
+    for num in cromossomo:
+        rep_binaria = format(num, '03b') # Sempre gera exatamente 3 bits
+        cromossomo_binario.extend([int(bit) for bit in rep_binaria])
+    return cromossomo_binario
 
 # Conversor binário para decimal
-def binary_to_decimal(chromosome: list[int], size: int = 8) -> list[int]:
-    """
-    Converte um cromossomo binário de volta para uma lista de inteiros,
-    onde cada conjunto de 3 bits representa a posição de uma rainha (0-7).
-    """
-    decimal_chromosome = []
-    for i in range(0, size * 3, 3):  # Itera em blocos de 3 bits
-        decimal_value = chromosome[i] * 4 + chromosome[i+1] * 2 + chromosome[i+2]
-        decimal_chromosome.append(decimal_value)
+def binario_para_decimal(cromossomo: list[int], tamanho: int = 8) -> list[int]:
+
+    cromossomo_decimal = [] 
+    for i in range(0, tamanho * 3, 3):  # Itera em blocos de 3 bits
+        valor_decimal = cromossomo[i] * 4 + cromossomo[i+1] * 2 + cromossomo[i+2]
+        cromossomo_decimal.append(valor_decimal)
     
-    return decimal_chromosome
+    return cromossomo_decimal
 
 # Mutação
-def bit_flip_mutation(chromosome: list[int]) -> list[int]:
+def mutacao_bit_flip(cromossomo: list[int]) -> list[int]:
     
     # Converter de decimal para binário
-    binary_chromosome = decimal_to_binary(chromosome)
+    cromossomo_binario = decimal_para_binario(cromossomo)
     
     # Seleciona um índice aleatório do cromossomo binário
-    index = randint(0, len(binary_chromosome) - 1)
+    index = randint(0, len(cromossomo_binario) - 1)
     
     # Realiza o flip do bit selecionado
-    binary_chromosome[index] = 1 - binary_chromosome[index]
+    cromossomo_binario[index] = 1 - cromossomo_binario[index]
 
     # Converter de binário para decimal
-    decimal_chromosome = binary_to_decimal(binary_chromosome)
+    cromossomo_decimal = binario_para_decimal(cromossomo_binario)
     
-    return decimal_chromosome
+    return cromossomo_decimal
 
 # Cruzamento
-def one_point_crossover(chromosome1: list[int], chromosome2: list[int], size: int) -> tuple[list[int], list[int]]:
-    """
-    Perform one-point crossover and ensure resulting chromosomes stay within valid range.
-    """
-    point = randint(1, size-2)
+def cruzamento_ponto_corte(cromossomo1: list[int], cromossomo2: list[int], tamanho: int) -> tuple[list[int], list[int]]:
 
-    child1 = chromosome1[:point] + chromosome2[point:]
-    child2 = chromosome2[:point] + chromosome1[point:]
+    ponto = randint(1, tamanho-2)
 
-    # Garante que os valores dos filhos estão entre 0 e 7
-    child1 = [min(max(0, gene), 7) for gene in child1]
-    child2 = [min(max(0, gene), 7) for gene in child2]
+    filho1 = cromossomo1[:ponto] + cromossomo2[ponto:]
+    filho2 = cromossomo2[:ponto] + cromossomo1[ponto:]
     
-    return child1, child2
+    return filho1, filho2
 
- 
 # Cromossomo
-def generate_chromosome(size: int):
-    """
-    Generates new random chromosome using sample() function from random library.
-    Chromosomes will now range from 0 to 7.
-    """
-    return sample(range(0, size), size)
+def gerar_cromossomo (tamanho: int):
 
-def generate_population(population_size: int, chromosome_size: int, mutation_probability: float, old_population: list[list[int]], fitness_values: list[list[int]]) -> list[list[int]]:
-    """
-    Generate new population using the old one and its fitness values. It iterates until the new population
-    reaches the desired population size, But here it only iterates the half because in each iteration we
-    produce two new childs. Steps of generating new childs are as following:
-    1. Select the parents using Roulette Wheel Selection method.
-    2. Make crossover between these parents using Two-Point Crossover.
-    3. For each child generate a random number between 0 and 1 to know if we should mutate it or not.
-    4. If the mutation will happen we use the Random Reset Mutation.
-    5. Add these childs to the new population.
-    """
-    new_population = []
+    return sample(range(0, tamanho), tamanho)
+
+# Gerar a população
+def gerar_populacao(tamanho_populacao: int, tamanho_cromossomo: int, probabilidade_mutacao: float, antiga_populacao: list[list[int]], valores_fitness: list[list[int]]) -> list[list[int]]:
+
+    nova_populacao = []
     
-    for _ in range(int(population_size/2)):
-        parent1 = roulette_wheel_selection(old_population, fitness_values, population_size)
-        parent2 = roulette_wheel_selection(old_population, fitness_values, population_size)
+    for _ in range(int(tamanho_populacao/2)):
+        pai1 = selecao_roleta(antiga_populacao, valores_fitness, tamanho_populacao)
+        pai2 = selecao_roleta(antiga_populacao, valores_fitness, tamanho_populacao)  
 
-        child1, child2 = one_point_crossover(parent1, parent2, chromosome_size)
-        if random() < mutation_probability:
-            child1 = bit_flip_mutation(child1)
-        if random() < mutation_probability:
-            child2 = bit_flip_mutation(child2)
+        filho1, filho2 = cruzamento_ponto_corte(pai1, pai2, tamanho_cromossomo)
+        if random() < probabilidade_mutacao:
+            filho1 = mutacao_bit_flip(filho1)
+        if random() < probabilidade_mutacao:
+            filho2 = mutacao_bit_flip(filho2)
         
-        new_population.append(child1)
-        new_population.append(child2)
+        nova_populacao.append(filho1)
+        nova_populacao.append(filho2)
 
-    return new_population
+    return nova_populacao
 
 # Fitness
-def fitness(n: int, chromosome: list[int], max_fitness: int) -> int:
-    """
-    It checks for each queen if there is a conflict with the other queens or not, sum those conflicts, then
-    subtract them from the max fitness to get the chromosome fitness.
-    """
-    conflicts = 0
+def fitness(n: int, cromossomo: list[int], fitness_max: int) -> int:
+
+    conflitos = 0
 
     for i in range(n):
         for j in range(i+1, n):
-            if chromosome[i] == chromosome[j] or abs(chromosome[i]-chromosome[j]) == abs(i-j):
-                conflicts += 1
+            if cromossomo[i] == cromossomo[j] or abs(cromossomo[i]- cromossomo[j]) == abs(i-j):
+                conflitos += 1
 
-    return int(max_fitness-conflicts)
+    return int(fitness_max - conflitos)
 
-if n != 2 and n != 3:  # Check if the problem can be solved or not
-	
-	max_fitness = (n * (n-1)) / 2  # get the max fitness can be reached for n
-	
-	# Generate the initial population
-	population = [generate_chromosome(n) for _ in range(POPULATION_SIZE)]
-	
-	# Evaluate the fitness value for each chromosome 
-	fitness_values = [fitness(n, chromosome, max_fitness) for chromosome in population]
-	
-	# Save the fittest found chromosome, it's used when there is no solution found
-	fittest_found = population[fitness_values.index(max(fitness_values))]
-	
-	generation = 0
-	
-	while generation != GENERATIONS_NUMBER and max_fitness != fitness(n, fittest_found, max_fitness):
-		population = generate_population(POPULATION_SIZE, n, MUTATION_PROBABILITY, population, fitness_values)
-		fitness_values = [fitness(n, chromosome, max_fitness) for chromosome in population]
-		
-		# Check if the fittest one in the current population is more fit than the saved one
-		current_fittest = population[fitness_values.index(max(fitness_values))]
-		if fitness(n, current_fittest, max_fitness) > fitness(n, fittest_found, max_fitness):
-			fittest_found = current_fittest
-		
-		generation += 1
+def queen_problem(n: int):
+    
+    fitness_max = (n * (n - 1)) / 2
 
-	# Check if there is a solution in the last population to show
-	if max_fitness in fitness_values:
-		print(f"Solved in generation {generation}")
-		solution = population[fitness_values.index(max_fitness)]
-		print(f"Found solution = {solution}") 
+    # Gerar a população incial
+    populacao = [gerar_cromossomo(n) for _ in range(TAMANHO_POPULACAO)]
+    
+    # Avalia o valor fitness para cada cromossomo
+    valores_fitness = [fitness(n, cromossomo, fitness_max) for cromossomo in populacao] 
 	
-	else:
-		print(f"No solution is found in {GENERATIONS_NUMBER} generations!!")
-		print(f"Fittest found solution = {fittest_found}")
+	  # Salva o cromossomo mais apto encontrado , é usado quando não tem uma solução encontrada
+    mais_apto_encontrado = populacao[valores_fitness.index(max(valores_fitness))]
+    
+    geracao = 0
+
+    while geracao != NUMERO_GERACOES and fitness_max != fitness(n, mais_apto_encontrado, fitness_max):
+      populacao = gerar_populacao(TAMANHO_POPULACAO, n, PROBABILIDADE_MUTACAO, populacao, valores_fitness)
+      valores_fitness = [fitness(n, cromossomo, fitness_max) for cromossomo in populacao]
+      
+      mais_apto_atual = populacao[valores_fitness.index(max(valores_fitness))]
+      
+      if fitness(n, mais_apto_atual, fitness_max) > fitness(n, mais_apto_encontrado, fitness_max):
+        mais_apto_encontrado = mais_apto_atual
+    
+      geracao += 1
+
+	  # Check if there is a solution in the last population to show 
+    if fitness_max in valores_fitness:
+      print(f"Solucionado na geração:{geracao}") 
+      solucao = populacao[valores_fitness.index(fitness_max)]
+      print(f"Solução encontrada = {solucao}")
+    else:
+      print(f"Nenhuma solução encontrada em {NUMERO_GERACOES} gerações!!") 
+      print(f"Solução mais apta encontrada: {mais_apto_encontrado}")
+
+
+for i in range(50):
+  queen_problem(n)
+  print("\n")
